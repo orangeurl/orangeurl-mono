@@ -13,8 +13,10 @@
     reverse_proxy api:3000
   }
 
-  # Everything else → app subdomain.
-  redir https://app.{$DOMAIN:orangeurl.live}{uri} 301
+  # Everything else (incl. apex /) → app subdomain.
+  handle {
+    redir https://app.{$DOMAIN:orangeurl.live}{uri} 301
+  }
 
   log {
     output stdout
