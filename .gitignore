@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.output/
+.wxt/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+infra/.env
+backend/postgres-data/
+backend/data/
+backend/api/bin/
+.DS_Store
+*.log

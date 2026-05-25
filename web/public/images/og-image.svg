@@ -1,0 +1,51 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF7500;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#gradient)"/>
+  
+  <!-- Main Content -->
+  <text x="60" y="180" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="80" font-weight="800" fill="white">OrangeURL</text>
+  
+  <text x="60" y="280" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="48" font-weight="600" fill="rgba(255,255,255,0.9)">Fast &amp; Secure URL Shortener</text>
+  
+  <text x="60" y="360" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="24" font-weight="400" fill="rgba(255,255,255,0.8)">Create short, memorable links with advanced analytics</text>
+  
+  <!-- URL -->
+  <text x="60" y="550" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.7)">app.orangeurl.live</text>
+</svg>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

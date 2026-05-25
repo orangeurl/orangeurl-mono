@@ -1,0 +1,45 @@
+{
+  email {$ACME_EMAIL:admin@orangeurl.live}
+}
+
+# Short-link apex domain. 6-char paths hit the Go API which 301s to the long URL.
+# Anything else falls through to the Next.js frontend (marketing, /robots.txt, etc.).
+{$DOMAIN:orangeurl.live}, www.{$DOMAIN:orangeurl.live} {
+  encode gzip zstd
+
+  @shortcode path_regexp shortlink ^/[a-zA-Z0-9]{6}$
+  handle @shortcode {
+    reverse_proxy api:3000
+  }
+
+  handle {
+    reverse_proxy web:3000
+  }
+
+  log {
+    output stdout
+    format console
+  }
+}
+
+# Dashboard / web app
+app.{$DOMAIN:orangeurl.live} {
+  encode gzip zstd
+  reverse_proxy web:3000
+
+  log {
+    output stdout
+    format console
+  }
+}
+
+# Go API
+api.{$DOMAIN:orangeurl.live} {
+  encode gzip zstd
+  reverse_proxy api:3000
+
+  log {
+    output stdout
+    format console
+  }
+}

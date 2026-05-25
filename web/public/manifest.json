@@ -1,0 +1,41 @@
+{
+  "name": "OrangeURL - URL Shortener",
+  "short_name": "OrangeURL",
+  "description": "Create short, memorable links with advanced analytics",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ea580c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Shorten URL",
+      "short_name": "Shorten",
+      "description": "Create a new short link",
+      "url": "/dashboard",
+      "icons": []
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View link analytics",
+      "url": "/analytics",
+      "icons": []
+    }
+  ]
+}
