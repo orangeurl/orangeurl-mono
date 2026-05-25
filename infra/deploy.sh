@@ -18,10 +18,10 @@ rsync -az --delete \
   --exclude '.next' \
   --exclude '.output' \
   --exclude '.wxt' \
-  --exclude 'allto' \
-  --exclude 'extension' \
-  --exclude 'mcp' \
-  --exclude 'docs' \
+  --exclude '/allto' \
+  --exclude '/extension' \
+  --exclude '/mcp' \
+  --exclude '/docs' \
   --exclude 'backend/postgres-data' \
   --exclude 'backend/data' \
   --exclude '*.env' \
