@@ -55,6 +55,9 @@ jobs:
           HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           ssh "$USER@$HOST" 'cd /opt/orangeurl/infra && docker compose up -d --build'
+          # Caddyfile is bind-mounted; rsync replaces the inode and Caddy
+          # keeps serving the old config. Force a restart so it rebinds.
+          ssh "$USER@$HOST" 'docker restart orangeurl-caddy'
           ssh "$USER@$HOST" 'docker image prune -f'
           ssh "$USER@$HOST" 'cd /opt/orangeurl/infra && docker compose ps'
 

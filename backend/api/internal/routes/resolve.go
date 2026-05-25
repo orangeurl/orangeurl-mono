@@ -226,21 +226,33 @@ func ResolveURL(c *fiber.Ctx) error {
 
 	value, err := r.Get(database.Ctx, url).Result()
 	if err == redis.Nil {
-		// Return 404 with HTML that redirects to broken-link page
-		c.Status(404)
-		return c.Type("html").SendString(`
-			<!DOCTYPE html>
-			<html>
-			<head>
-				<meta http-equiv="refresh" content="0;url=https://app.orangeurl.live/broken-link">
-				<title>Link Not Found</title>
-			</head>
-			<body>
-				<p>Redirecting to error page...</p>
-				<script>window.location.href='https://app.orangeurl.live/broken-link';</script>
-			</body>
-			</html>
-		`)
+		// Cache miss — Postgres is the source of truth.
+		urlRecord, pgErr := queries.GetURLByShortID(c.Context(), url)
+		if pgErr != nil {
+			c.Status(404)
+			return c.Type("html").SendString(`
+				<!DOCTYPE html>
+				<html>
+				<head>
+					<meta http-equiv="refresh" content="0;url=https://app.orangeurl.live/broken-link">
+					<title>Link Not Found</title>
+				</head>
+				<body>
+					<p>Redirecting to error page...</p>
+					<script>window.location.href='https://app.orangeurl.live/broken-link';</script>
+				</body>
+				</html>
+			`)
+		}
+		value = urlRecord.OriginalUrl
+		// Repopulate cache so subsequent hits skip the DB roundtrip.
+		ttl := time.Duration(0)
+		if urlRecord.Expiry.Valid {
+			if remaining := time.Until(urlRecord.Expiry.Time); remaining > 0 {
+				ttl = remaining
+			}
+		}
+		_ = r.Set(database.Ctx, url, value, ttl).Err()
 	} else if err != nil {
 		// Return 500 with HTML that redirects for database errors
 		c.Status(500)
