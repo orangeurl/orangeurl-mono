@@ -141,24 +141,24 @@ func setupRoutes(app *fiber.App) {
 	api.Delete("/teams/urls/:urlID/unassign", middleware.RequireAuth(), teams.UnassignURLFromTeam)
 
 	// Admin routes for abuse management (requires JWT auth + admin role)
-	api.Post("/admin/block", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.BlockURL)
-	api.Delete("/admin/block/:shortId", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.UnblockURL)
-	api.Get("/admin/blocked", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.ListBlockedURLs)
-	api.Get("/admin/blocked/:shortId", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.IsURLBlocked)
+	api.Post("/admin/block", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.BlockURL)
+	api.Delete("/admin/block/:shortId", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.UnblockURL)
+	api.Get("/admin/blocked", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.ListBlockedURLs)
+	api.Get("/admin/blocked/:shortId", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.IsURLBlocked)
 
 	// Admin URL management (requires JWT auth + admin role)
-	api.Get("/admin/urls", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminListAllURLs)
-	api.Delete("/admin/urls/:id", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminHardDeleteURL)
+	api.Get("/admin/urls", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminListAllURLs)
+	api.Delete("/admin/urls/:id", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminHardDeleteURL)
 
 	// Admin domain blocking (requires JWT auth + admin role)
-	api.Get("/admin/domains", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminListBlockedDomains)
-	api.Post("/admin/domains", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminAddBlockedDomain)
-	api.Delete("/admin/domains/:id", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminRemoveBlockedDomain)
+	api.Get("/admin/domains", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminListBlockedDomains)
+	api.Post("/admin/domains", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminAddBlockedDomain)
+	api.Delete("/admin/domains/:id", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminRemoveBlockedDomain)
 
 	// Admin user management (requires JWT auth + admin role)
-	api.Get("/admin/users", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminListUsers)
-	api.Post("/admin/users/:id/ban", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminBanUser)
-	api.Post("/admin/users/:id/unban", middleware.RequireAuth(), middleware.AdminOnly(), middleware.AdminAuditLog(), admin.AdminUnbanUser)
+	api.Get("/admin/users", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminListUsers)
+	api.Post("/admin/users/:id/ban", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminBanUser)
+	api.Post("/admin/users/:id/unban", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminUnbanUser)
 
 	// Public API (v1) - Requires API Key + Rate Limiting
 	apiV1 := app.Group("/api/v1", middleware.RequireAPIKey(), middleware.APIRateLimit())
