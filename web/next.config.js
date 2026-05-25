@@ -58,7 +58,15 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://clerk.orangeurl.live https://accounts.orangeurl.live https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.orangeurl.live https://clerk.orangeurl.live https://accounts.orangeurl.live https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com https://api.stripe.com; frame-src https://clerk.orangeurl.live https://accounts.orangeurl.live https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com https://js.stripe.com https://hooks.stripe.com;"
+            // script-src: 'unsafe-inline' is required for inline JSON-LD <script type="application/ld+json">
+            //   tags injected by app/layout.tsx for SEO structured data. Removing it would break
+            //   Google rich-results indexing. A nonce-based approach would be preferable but requires
+            //   wiring nonces through Next.js + Clerk and is out of scope here.
+            // style-src: 'unsafe-inline' is required by Clerk components, framer-motion runtime
+            //   style injection, and Next.js styled-jsx.
+            // 'unsafe-eval' has been removed: Clerk, framer-motion, and Next.js production
+            //   builds do not require eval. Verified via `npm run build`.
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://clerk.orangeurl.live https://accounts.orangeurl.live https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.orangeurl.live https://clerk.orangeurl.live https://accounts.orangeurl.live https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com https://api.stripe.com; frame-src https://clerk.orangeurl.live https://accounts.orangeurl.live https://challenges.cloudflare.com https://checkout.dodopayments.com https://*.dodopayments.com https://js.stripe.com https://hooks.stripe.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://clerk.orangeurl.live https://accounts.orangeurl.live https://checkout.dodopayments.com;"
           }
         ],
       },
