@@ -145,11 +145,7 @@ export const metadata: Metadata = {
       noimageindex: false,
     },
   },
-  verification: {
-    // Add your verification codes when available
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
-  },
+  // TODO: populate `verification` with real Google/Yandex codes once available.
   other: {
     'price:currency': 'USD',
     'price:amount': '5.00',
@@ -251,13 +247,8 @@ export default function RootLayout({
                   priceCurrency: 'USD',
                   offerCount: '3'
                 },
-                aggregateRating: {
-                  '@type': 'AggregateRating',
-                  ratingValue: '4.8',
-                  ratingCount: '100',
-                  bestRating: '5',
-                  worstRating: '1'
-                },
+                // aggregateRating intentionally omitted until real review data is wired in.
+                // Google penalizes fabricated structured data. TODO: wire to real reviews.
                 description: 'Create custom short links, QR codes, and track analytics. The most affordable URL shortener for US & Europe.',
                 featureList: [
                   'Custom URL shortening',

@@ -187,13 +187,8 @@ export const schemaGenerators = {
           priceCurrency: data.currency,
           availability: `https://schema.org/${data.availability}`,
         },
-        aggregateRating: {
-          '@type': 'AggregateRating',
-          ratingValue: '4.8',
-          ratingCount: '100',
-          bestRating: '5',
-          worstRating: '1',
-        },
+        // aggregateRating intentionally omitted until real review data exists.
+        // TODO: wire to real reviews before re-adding.
       },
     });
   },
