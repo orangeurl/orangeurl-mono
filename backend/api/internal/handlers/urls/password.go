@@ -4,11 +4,29 @@ import (
 	"database/sql"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/xenonnn4w/orangeurl/internal/database"
 	"github.com/xenonnn4w/orangeurl/internal/middleware"
+)
+
+// Brute-force protection constants for password-protected URLs.
+// These operate at the URL level (using urls.password_attempts +
+// urls.last_password_attempt columns) and complement the per-IP Redis
+// rate limit in middleware.CheckRateLimit — together they defend against
+// both single-IP and distributed credential-stuffing attacks.
+const (
+	// urlBruteForceThreshold is the number of failed attempts within
+	// urlBruteForceWindow that triggers a lockout.
+	urlBruteForceThreshold = 5
+	// urlBruteForceWindow is the rolling window in which failed attempts
+	// accumulate toward the lockout threshold.
+	urlBruteForceWindow = 10 * time.Minute
+	// urlBruteForceLockout is how long the URL refuses unlock attempts after
+	// hitting the threshold.
+	urlBruteForceLockout = 1 * time.Hour
 )
 
 // SetURLPassword sets or updates password protection for a URL (Premium only)
@@ -223,6 +241,36 @@ func UnlockURL(c *fiber.Ctx) error {
 	// Check if URL is locked
 	if !urlRecord.IsLocked.Valid || !urlRecord.IsLocked.Bool {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "URL is not password protected"})
+	}
+
+	// URL-level brute-force protection: if >= urlBruteForceThreshold failed
+	// attempts have occurred within urlBruteForceWindow, refuse all unlock
+	// attempts for urlBruteForceLockout. This protects against distributed
+	// attacks (multiple IPs targeting one URL) that bypass per-IP rate limits.
+	if urlRecord.PasswordAttempts.Valid &&
+		urlRecord.PasswordAttempts.Int32 >= urlBruteForceThreshold &&
+		urlRecord.LastPasswordAttempt.Valid {
+		sinceLast := time.Since(urlRecord.LastPasswordAttempt.Time)
+		if sinceLast < urlBruteForceLockout {
+			// Within lockout window — reject.
+			retryAfter := urlBruteForceLockout - sinceLast
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error":       "Too many failed unlock attempts for this URL. Please try again later.",
+				"retry_after": int(retryAfter.Seconds()),
+			})
+		}
+		// Lockout has elapsed — reset the counter so the user can retry fresh.
+		if err := queries.ResetPasswordAttempts(c.Context(), shortID); err != nil {
+			log.Printf("[UnlockURL] Failed to reset attempts after lockout expiry: %v", err)
+		}
+	} else if urlRecord.PasswordAttempts.Valid &&
+		urlRecord.PasswordAttempts.Int32 > 0 &&
+		urlRecord.LastPasswordAttempt.Valid &&
+		time.Since(urlRecord.LastPasswordAttempt.Time) > urlBruteForceWindow {
+		// Stale counter outside the rolling window — reset before counting this attempt.
+		if err := queries.ResetPasswordAttempts(c.Context(), shortID); err != nil {
+			log.Printf("[UnlockURL] Failed to reset stale attempts: %v", err)
+		}
 	}
 
 	// Verify password

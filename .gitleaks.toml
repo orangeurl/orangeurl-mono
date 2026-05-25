@@ -1,0 +1,66 @@
+# Gitleaks configuration for orangeurl-mono.
+# Extends the default ruleset (which covers AWS, GCP, Stripe, GitHub, etc.)
+# with project-specific rules and a small set of vetted false-positive allows.
+
+title = "orangeurl gitleaks config"
+
+[extend]
+useDefault = true
+
+# ---- Project-specific rules -------------------------------------------------
+
+[[rules]]
+id = "clerk-secret-key"
+description = "Clerk secret API key"
+regex = '''sk_(test|live)_[A-Za-z0-9]{20,}'''
+tags = ["clerk", "secret"]
+
+[[rules]]
+id = "clerk-publishable-key-live"
+description = "Clerk live publishable key (informational; not strictly secret but flagged for review)"
+regex = '''pk_live_[A-Za-z0-9]{20,}'''
+tags = ["clerk"]
+
+[[rules]]
+id = "dodo-payments-api-key"
+description = "DodoPayments API key"
+regex = '''dodo_(test|live)_[A-Za-z0-9]{20,}'''
+tags = ["dodopayments", "secret"]
+
+[[rules]]
+id = "webhook-secret"
+description = "Generic webhook signing secret (Clerk svix / DodoPayments / Stripe whsec_*)"
+regex = '''whsec_[A-Za-z0-9/+=]{20,}'''
+tags = ["webhook", "secret"]
+
+[[rules]]
+id = "postgres-url-with-password"
+description = "Postgres connection string with embedded password"
+regex = '''postgres(?:ql)?:\/\/[^:]+:[^@\s"']{6,}@'''
+tags = ["database", "secret"]
+
+# ---- Allowlist --------------------------------------------------------------
+
+[allowlist]
+description = "Paths and patterns that are safe to ignore"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)dist/''',
+  '''(^|/)build/''',
+  '''\.lock$''',
+  '''package-lock\.json$''',
+  '''go\.sum$''',
+  '''(^|/)\.env\.example$''',
+]
+
+regexes = [
+  # DodoPayments PRODUCT IDs (pdt_*) are public identifiers used in
+  # lookup tables, not secrets. They appear in the subscription webhook
+  # handler to map products → plan tiers.
+  '''pdt_[A-Za-z0-9_]+''',
+  # Common placeholder values in example configs.
+  '''changeme''',
+  '''your_[a-z_]+_here''',
+  '''sk_test_xxxx+''',
+]

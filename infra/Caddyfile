@@ -2,10 +2,26 @@
   email {$ACME_EMAIL:admin@orangeurl.live}
 }
 
+# Shared security-header snippets. Defined once, applied per-site below so we
+# can keep X-Frame-Options strict on the API while leaving the web app
+# permissive enough for embeds / Clerk popups.
+(common_security_headers) {
+  header {
+    # Lock down powerful browser features we never use.
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # Send the origin (not full URL) on cross-origin navigations to limit
+    # referrer leakage while keeping analytics usable.
+    Referrer-Policy "strict-origin-when-cross-origin"
+    # Remove Caddy's default Server banner to reduce fingerprinting.
+    -Server
+  }
+}
+
 # Apex is short-link redirector only. Everything that isn't a short code
 # permanently redirects to the app subdomain (the canonical web frontend).
 {$DOMAIN:orangeurl.live}, www.{$DOMAIN:orangeurl.live} {
   encode gzip zstd
+  import common_security_headers
 
   # Short codes: 2-16 alphanumeric + dot/dash/underscore.
   # If the API doesn't know the code, treat the path as a normal page
@@ -32,8 +48,18 @@
 }
 
 # Dashboard / web app
+# Note: X-Frame-Options is intentionally NOT set to DENY here — Next.js
+# handles its own frame policy (SAMEORIGIN) via next.config.js to allow
+# Clerk / payment iframes to function correctly.
 app.{$DOMAIN:orangeurl.live} {
   encode gzip zstd
+  import common_security_headers
+
+  # Reject oversized request bodies before they reach the app.
+  request_body {
+    max_size 1MB
+  }
+
   reverse_proxy web:3000
 
   log {
@@ -45,6 +71,17 @@ app.{$DOMAIN:orangeurl.live} {
 # Go API
 api.{$DOMAIN:orangeurl.live} {
   encode gzip zstd
+  import common_security_headers
+
+  # The API never renders HTML — forbid framing entirely.
+  header X-Frame-Options "DENY"
+
+  # Reject oversized request bodies before they hit the API (defense in depth;
+  # Fiber also enforces a 1MB BodyLimit).
+  request_body {
+    max_size 1MB
+  }
+
   reverse_proxy api:3000
 
   log {

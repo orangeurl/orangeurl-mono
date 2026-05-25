@@ -105,6 +105,47 @@ func AuthRateLimit() fiber.Handler {
 }
 
 
+// PublicRateLimit creates a rate limiter for unauthenticated public endpoints
+// (e.g. the short-link redirect route /:url). Limits to 60 requests per minute per IP
+// to prevent abuse / scraping while remaining permissive enough for human browsing.
+// Fails open if Redis is unavailable.
+func PublicRateLimit() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		ip := c.IP()
+
+		redisClient := database.GetRedis()
+		if redisClient == nil {
+			return c.Next()
+		}
+
+		key := fmt.Sprintf("public_ratelimit:%s", ip)
+
+		val, err := redisClient.Incr(database.Ctx, key).Result()
+		if err != nil {
+			log.Printf("[RateLimit] Redis error: %v", err)
+			return c.Next()
+		}
+
+		if val == 1 {
+			redisClient.Expire(database.Ctx, key, 1*time.Minute)
+		}
+
+		limit := int64(60)
+		if val > limit {
+			ttl, _ := redisClient.TTL(database.Ctx, key).Result()
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error":       "Rate limit exceeded",
+				"retry_after": fmt.Sprintf("%d seconds", int(ttl.Seconds())),
+			})
+		}
+
+		c.Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
+		c.Set("X-RateLimit-Remaining", fmt.Sprintf("%d", limit-val))
+
+		return c.Next()
+	}
+}
+
 // APIRateLimit creates a rate limiter for API key requests based on subscription tier
 func APIRateLimit() fiber.Handler {
 	return func(c *fiber.Ctx) error {
