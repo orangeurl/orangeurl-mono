@@ -43,7 +43,8 @@ import { validateURLProtocol, validateCustomShortURL, sanitizeInput } from '@/li
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import QRCode from 'qrcode';
-import QRCodeStyling from 'qr-code-styling';
+// qr-code-styling is heavy (~80 KB). Loaded lazily on demand to keep landing page light.
+import type QRCodeStylingType from 'qr-code-styling';
 import { WaitlistDialog } from '@/components/WaitlistDialog';
 import { useSearchParams } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
@@ -329,7 +330,8 @@ function HomeContent({ initialUrl }: { initialUrl?: string }) {
   // Generate Modern QR Code function
   const generateQRCode = async (url: string) => {
     try {
-      const qrCode = new QRCodeStyling(getQRCodeConfig(qrCodeStyle, url));
+      const { default: QRCodeStyling } = await import('qr-code-styling');
+      const qrCode = new (QRCodeStyling as typeof QRCodeStylingType)(getQRCodeConfig(qrCodeStyle, url));
 
       // Generate QR code
       const buffer = await qrCode.getRawData("png");

@@ -54,7 +54,9 @@ jobs:
           USER: ${{ secrets.DEPLOY_USER }}
           HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
-          ssh "$USER@$HOST" 'cd /opt/orangeurl/infra && docker compose up -d --build'
+          # Single-vCPU droplet: serialize builds so Go + Next.js don't fight for CPU.
+          # BuildKit defaults to parallel; force one builder at a time, then bring services up.
+          ssh "$USER@$HOST" 'cd /opt/orangeurl/infra && docker compose build --parallel=false api && docker compose build --parallel=false web && docker compose up -d --no-build'
           # Caddyfile is bind-mounted; rsync replaces the inode and Caddy
           # keeps serving the old config. Force a restart so it rebinds.
           ssh "$USER@$HOST" 'docker restart orangeurl-caddy'
