@@ -291,38 +291,6 @@ export function Footer() {
             <div className="text-sm text-muted-foreground">
               {t.footer.madeWith} <span className="text-primary">❤</span> {t.footer.forBusinesses}
             </div>
-
-            {/* Product Hunt Badges */}
-            <div className="flex items-center gap-2">
-              <a 
-                href="https://www.producthunt.com/products/orangeurl?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-orangeurl" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="dark:hidden"
-              >
-                <img 
-                  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1038740&theme=light&t=1765449304885" 
-                  alt="OrangeURL - Fast & Secure URL Shortener | Custom Short Links & QR Codes | Product Hunt" 
-                  style={{ width: '250px', height: '54px' }} 
-                  width="250" 
-                  height="54" 
-                />
-              </a>
-              <a 
-                href="https://www.producthunt.com/products/orangeurl?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-orangeurl" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden dark:block"
-              >
-                <img 
-                  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1038740&theme=dark&t=1765449472203" 
-                  alt="OrangeURL - Fast & Secure URL Shortener | Custom Short Links & QR Codes | Product Hunt" 
-                  style={{ width: '250px', height: '54px' }} 
-                  width="250" 
-                  height="54" 
-                />
-              </a>
-            </div>
           </div>
         </div>
       </div>
