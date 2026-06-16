@@ -51,14 +51,14 @@ export default function ArmanSinghArchivePage() {
         </div>
         <div>
           <p className="text-sm text-muted-foreground mb-2">Duration</p>
-          <p className="font-medium">May 15, 2026 – July 15, 2026</p>
+          <p className="font-medium">June 10, 2026 – July 15, 2026</p>
         </div>
       </div>
 
       {/* Description */}
       <div className="space-y-5 text-muted-foreground leading-relaxed max-w-3xl">
         <p>
-          Arman joined OrangeURL as a Software Development Intern, beginning May 15, 2026
+          Arman joined OrangeURL as a Software Development Intern, beginning June 10, 2026
           and ending July 15, 2026. Over the course of this full-time internship, they
           worked closely with our engineering team, taking ownership of assigned tasks and
           consistently delivering high-quality work.
