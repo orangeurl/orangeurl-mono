@@ -112,6 +112,17 @@ type AppSetting struct {
 	UpdatedAt sql.NullTime `json:"updated_at"`
 }
 
+type Notification struct {
+	ID        uuid.UUID      `json:"id"`
+	UserID    uuid.UUID      `json:"user_id"`
+	Type      string         `json:"type"`
+	Title     string         `json:"title"`
+	Message   string         `json:"message"`
+	ShortID   sql.NullString `json:"short_id"`
+	IsRead    bool           `json:"is_read"`
+	CreatedAt sql.NullTime   `json:"created_at"`
+}
+
 type MonthlyUsage struct {
 	ID              uuid.UUID    `json:"id"`
 	UserID          uuid.UUID    `json:"user_id"`

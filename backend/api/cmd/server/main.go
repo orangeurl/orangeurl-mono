@@ -18,6 +18,7 @@ import (
 	"github.com/xenonnn4w/orangeurl/internal/handlers/auth"
 	"github.com/xenonnn4w/orangeurl/internal/handlers/dashboard"
 	"github.com/xenonnn4w/orangeurl/internal/handlers/docs"
+	"github.com/xenonnn4w/orangeurl/internal/handlers/notifications"
 	"github.com/xenonnn4w/orangeurl/internal/handlers/payment"
 	"github.com/xenonnn4w/orangeurl/internal/handlers/qr"
 	"github.com/xenonnn4w/orangeurl/internal/handlers/teams"
@@ -91,6 +92,13 @@ func setupRoutes(app *fiber.App) {
 	api.Get("/dashboard/urls/:shortId/analytics", middleware.RequireAuth(), dashboard.GetURLAnalytics)
 	api.Get("/dashboard/urls/personal", middleware.RequireAuth(), dashboard.GetPersonalURLs)
 	api.Get("/dashboard/urls/team", middleware.RequireAuth(), dashboard.GetTeamURLs)
+
+	// Notification routes (with auth) — in-app alerts like "your link was flagged"
+	api.Get("/notifications", middleware.RequireAuth(), notifications.List)
+	api.Get("/notifications/unread-count", middleware.RequireAuth(), notifications.UnreadCount)
+	api.Post("/notifications/read-all", middleware.RequireAuth(), notifications.MarkAllRead)
+	api.Post("/notifications/:id/read", middleware.RequireAuth(), notifications.MarkRead)
+	api.Delete("/notifications/:id", middleware.RequireAuth(), notifications.Delete)
 
 	// Subscription info routes (with auth)
 	api.Get("/subscription/info", middleware.RequireAuth(), subscription.HandleGetSubscriptionInfo)

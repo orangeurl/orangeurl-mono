@@ -1509,14 +1509,23 @@ export default function AdminPage() {
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2 sm:gap-0">
-              <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogFooter className="gap-2 sm:gap-0 sm:flex-row sm:justify-between">
               <AlertDialogAction
-                onClick={() => flagTarget && handleFlag(flagTarget, flagReason || 'This link may be phishing or spam.')}
-                className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800"
+                onClick={() => { const t = flagTarget; setFlagTarget(null); if (t) handleDelete(t); }}
+                className="bg-transparent border border-red-200 dark:border-red-900/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 mt-0 sm:mr-auto"
               >
-                Flag Link
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Remove link entirely
               </AlertDialogAction>
+              <div className="flex gap-2">
+                <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => flagTarget && handleFlag(flagTarget, flagReason || 'This link may be phishing or spam.')}
+                  className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800"
+                >
+                  Flag Link
+                </AlertDialogAction>
+              </div>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

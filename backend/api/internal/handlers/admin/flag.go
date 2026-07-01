@@ -85,6 +85,20 @@ func FlagURL(c *fiber.Ctx) error {
 
 	log.Printf("[FlagURL] ✅ Admin %s flagged URL '%s' - Reason: %s", user.Email, req.ShortID, req.FlagReason)
 
+	// Notify the link owner in-app (best-effort; skip anonymous links).
+	if urlRecord, uErr := queries.GetURLByShortID(c.Context(), req.ShortID); uErr == nil && urlRecord.UserID != uuid.Nil {
+		_, nErr := queries.CreateNotification(c.Context(), database.CreateNotificationParams{
+			UserID:  urlRecord.UserID,
+			Type:    "url_flagged",
+			Title:   "Your link was flagged",
+			Message: "Your short link \"" + req.ShortID + "\" was flagged for review: " + req.FlagReason,
+			ShortID: sql.NullString{String: req.ShortID, Valid: true},
+		})
+		if nErr != nil {
+			log.Printf("[FlagURL] Warning: failed to create notification for owner: %v", nErr)
+		}
+	}
+
 	return c.JSON(fiber.Map{
 		"message":     "URL flagged successfully",
 		"short_id":    flagged.ShortID,

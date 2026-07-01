@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SignedIn, SignedOut, useUser, useAuth } from '@clerk/nextjs';
 import { DarkModeToggle } from './DarkModeToggle';
+import { NotificationBell } from './NotificationBell';
 import { TierUserButton } from './TierUserButton';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Button } from './ui/button';
@@ -171,7 +172,10 @@ export function Navbar() {
                 </Button>
               )}
               {isSignedIn && (
-                <TierUserButton tier={userTier || 'free'} />
+                <>
+                  <NotificationBell />
+                  <TierUserButton tier={userTier || 'free'} />
+                </>
               )}
             </motion.div>
           </div>
@@ -179,7 +183,10 @@ export function Navbar() {
           {/* Mobile Actions */}
           <div className="flex md:hidden items-center space-x-2">
             {isSignedIn && (
-              <TierUserButton tier={userTier || 'free'} />
+              <>
+                <NotificationBell />
+                <TierUserButton tier={userTier || 'free'} />
+              </>
             )}
             {!isSignedIn && (
               <Button variant="ghost" size="sm" asChild>

@@ -428,49 +428,133 @@ func renderInterstitial(destination, reason string) string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Safety check · OrangeURL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  :root { --orange:#f97316; --orange-dark:#ea580c; }
+  /* Brand tokens mirrored from the web app (globals.css) */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 20 14% 12%;
+    --card: 0 0% 100%;
+    --muted: 24 20% 96%;
+    --muted-foreground: 24 10% 45%;
+    --primary: 24 94% 55%;
+    --primary-dark: 24 94% 45%;
+    --border: 24 20% 90%;
+    --radius: 0.75rem;
+    --destructive: 0 84% 60%;
+    --destructive-soft: 0 86% 97%;
+    --destructive-border: 0 90% 92%;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 0 0% 6%;
+      --foreground: 0 0% 97%;
+      --card: 0 0% 10%;
+      --muted: 0 0% 15%;
+      --muted-foreground: 0 0% 60%;
+      --border: 0 0% 20%;
+      --destructive-soft: 0 40% 14%;
+      --destructive-border: 0 45% 25%;
+    }
+  }
   * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%); padding:24px;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#1c1917; }
-  .card { background:#fff; max-width:480px; width:100%; border-radius:16px; padding:32px;
-    box-shadow:0 10px 40px rgba(0,0,0,.12); text-align:center; }
-  .brand { display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:18px;
-    color:var(--orange-dark); margin-bottom:24px; }
-  .brand .dot { width:22px; height:22px; border-radius:6px;
-    background:linear-gradient(135deg,var(--orange),var(--orange-dark)); }
-  .warn-icon { width:64px; height:64px; margin:0 auto 16px; border-radius:50%;
-    background:#fef2f2; display:flex; align-items:center; justify-content:center; font-size:32px; }
-  h1 { font-size:22px; margin:0 0 12px; }
-  .reason { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:10px;
-    padding:12px 16px; font-size:14px; margin:0 0 20px; }
-  .dest { font-size:13px; color:#78716c; word-break:break-all; background:#f5f5f4;
-    border-radius:8px; padding:10px 12px; margin:0 0 24px; }
-  .dest strong { color:#44403c; }
-  .btn { display:inline-block; width:100%; padding:13px 20px; border-radius:10px; font-size:15px;
-    font-weight:600; text-decoration:none; cursor:pointer; border:none; }
-  .btn-primary { background:var(--orange); color:#fff; margin-bottom:10px; }
-  .btn-primary:hover { background:var(--orange-dark); }
-  .btn-secondary { background:transparent; color:#78716c; }
-  .btn-secondary:hover { color:#1c1917; }
-  .promo { margin-top:24px; padding-top:20px; border-top:1px solid #f0f0ef; font-size:13px; color:#78716c; }
-  .promo a { color:var(--orange-dark); font-weight:600; text-decoration:none; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; line-height: 1.5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: hsl(var(--foreground));
+    background:
+      radial-gradient(1200px 600px at 50% -10%, hsl(var(--primary) / 0.14), transparent 60%),
+      hsl(var(--background));
+  }
+  .card {
+    background: hsl(var(--card)); width: 100%; max-width: 480px;
+    border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) + 4px);
+    padding: 36px 32px; text-align: center;
+    box-shadow: 0 24px 60px -20px hsl(24 60% 30% / 0.20), 0 4px 12px hsl(0 0% 0% / 0.04);
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .brand .mark {
+    width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, #f97316 50%, #fb923c 100%);
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.4);
+  }
+  .brand .name {
+    font-weight: 800; font-size: 19px; letter-spacing: -0.01em;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, #fb923c 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .warn-icon {
+    width: 68px; height: 68px; margin: 0 auto 18px; border-radius: 50%;
+    background: hsl(var(--destructive-soft)); border: 1px solid hsl(var(--destructive-border));
+    display: flex; align-items: center; justify-content: center;
+  }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 14px; }
+  .reason {
+    background: hsl(var(--destructive-soft)); border: 1px solid hsl(var(--destructive-border));
+    color: hsl(var(--destructive)); border-radius: var(--radius);
+    padding: 12px 16px; font-size: 14px; font-weight: 500; margin: 0 0 18px;
+  }
+  .dest {
+    font-size: 13px; color: hsl(var(--muted-foreground));
+    background: hsl(var(--muted)); border: 1px solid hsl(var(--border));
+    border-radius: var(--radius); padding: 12px 14px; margin: 0 0 26px; text-align: left;
+  }
+  .dest .label { display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dest .url { font-family: 'JetBrains Mono', ui-monospace, monospace; color: hsl(var(--foreground)); word-break: break-all; font-size: 13px; }
+  .btn {
+    display: block; width: 100%; padding: 13px 20px; border-radius: var(--radius);
+    font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; border: none;
+    font-family: inherit; transition: all .15s ease;
+  }
+  .btn-primary {
+    color: #fff; margin-bottom: 8px;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+    box-shadow: 0 6px 16px hsl(var(--primary) / 0.35);
+  }
+  .btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  .btn-secondary { background: transparent; color: hsl(var(--muted-foreground)); padding: 10px; }
+  .btn-secondary:hover { color: hsl(var(--foreground)); }
+  .promo {
+    margin-top: 24px; padding-top: 20px; border-top: 1px solid hsl(var(--border));
+    font-size: 13px; color: hsl(var(--muted-foreground));
+  }
+  .promo a { color: hsl(var(--primary-dark)); font-weight: 600; text-decoration: none; }
+  .promo a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
-  <div class="card">
-    <div class="brand"><span class="dot"></span>OrangeURL</div>
-    <div class="warn-icon">⚠️</div>
-    <h1>Heads up — this link may be unsafe</h1>
+  <main class="card">
+    <div class="brand">
+      <span class="mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+      </span>
+      <span class="name">OrangeURL</span>
+    </div>
+    <div class="warn-icon">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="hsl(0 84% 60%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </div>
+    <h1>Heads up &mdash; this link may be unsafe</h1>
     <div class="reason">` + safeReason + `</div>
-    <div class="dest">You are about to visit:<br><strong>` + displayDest + `</strong></div>
+    <div class="dest">
+      <span class="label">You are about to visit</span>
+      <span class="url">` + displayDest + `</span>
+    </div>
     <a class="btn btn-primary" href="` + safeDest + `" rel="noopener noreferrer nofollow">Continue to site</a>
     <a class="btn btn-secondary" href="https://orangeurl.live">No thanks, take me back</a>
     <div class="promo">
-      Protected by <a href="https://orangeurl.live">OrangeURL</a> — create short links, QR codes &amp; landing pages that people can trust.
+      Protected by <a href="https://orangeurl.live">OrangeURL</a> &mdash; create short links, QR codes &amp; landing pages that people can trust.
     </div>
-  </div>
+  </main>
 </body>
 </html>`
 }
