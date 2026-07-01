@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"context"
 	"database/sql"
+	"html"
 	"log"
 	"net"
 	"os"
@@ -369,6 +371,107 @@ func ResolveURL(c *fiber.Ctx) error {
 		log.Printf("[ResolveURL] Webhook triggered for url.clicked: %s", shortURL)
 	}
 
+	// Safety interstitial: when the global toggle is enabled and this specific
+	// short link has been flagged by an admin, show a warning + branding page
+	// with a manual "Continue" button instead of redirecting immediately.
+	if interstitialEnabled(r, queries, c.Context()) {
+		if flagged, _ := queries.IsURLFlagged(c.Context(), url); flagged {
+			reason := "This link has been flagged as potentially unsafe."
+			if f, ferr := queries.GetFlaggedURL(c.Context(), url); ferr == nil && f.FlagReason != "" {
+				reason = f.FlagReason
+			}
+			c.Status(fiber.StatusOK)
+			return c.Type("html").SendString(renderInterstitial(value, reason))
+		}
+	}
+
 	return c.Redirect(value, 301)
+}
+
+// interstitialRedisKey mirrors admin.InterstitialRedisKey; duplicated here to
+// avoid a routes -> handlers import cycle.
+const interstitialRedisKey = "settings:interstitial_enabled"
+const interstitialSettingKey = "interstitial_enabled"
+
+// interstitialEnabled reads the global safety-interstitial toggle. It checks
+// Redis first (populated by the admin handler) and falls back to Postgres,
+// repopulating the cache on a miss. Defaults to disabled on any error so the
+// redirect hot path never breaks.
+func interstitialEnabled(r *redis.Client, queries *database.Queries, ctx context.Context) bool {
+	if val, err := r.Get(database.Ctx, interstitialRedisKey).Result(); err == nil {
+		return val == "true"
+	}
+	enabled := queries.GetBoolSetting(ctx, interstitialSettingKey, false)
+	cached := "false"
+	if enabled {
+		cached = "true"
+	}
+	_ = r.Set(database.Ctx, interstitialRedisKey, cached, 0).Err()
+	return enabled
+}
+
+// renderInterstitial returns a self-contained, brand-styled warning page shown
+// before redirecting a flagged link. destination is the final URL; reason is
+// the admin-supplied flag reason.
+func renderInterstitial(destination, reason string) string {
+	safeDest := html.EscapeString(destination)
+	safeReason := html.EscapeString(reason)
+	displayDest := safeDest
+	if len(displayDest) > 90 {
+		displayDest = displayDest[:90] + "…"
+	}
+
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Safety check · OrangeURL</title>
+<style>
+  :root { --orange:#f97316; --orange-dark:#ea580c; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%); padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#1c1917; }
+  .card { background:#fff; max-width:480px; width:100%; border-radius:16px; padding:32px;
+    box-shadow:0 10px 40px rgba(0,0,0,.12); text-align:center; }
+  .brand { display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:18px;
+    color:var(--orange-dark); margin-bottom:24px; }
+  .brand .dot { width:22px; height:22px; border-radius:6px;
+    background:linear-gradient(135deg,var(--orange),var(--orange-dark)); }
+  .warn-icon { width:64px; height:64px; margin:0 auto 16px; border-radius:50%;
+    background:#fef2f2; display:flex; align-items:center; justify-content:center; font-size:32px; }
+  h1 { font-size:22px; margin:0 0 12px; }
+  .reason { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:10px;
+    padding:12px 16px; font-size:14px; margin:0 0 20px; }
+  .dest { font-size:13px; color:#78716c; word-break:break-all; background:#f5f5f4;
+    border-radius:8px; padding:10px 12px; margin:0 0 24px; }
+  .dest strong { color:#44403c; }
+  .btn { display:inline-block; width:100%; padding:13px 20px; border-radius:10px; font-size:15px;
+    font-weight:600; text-decoration:none; cursor:pointer; border:none; }
+  .btn-primary { background:var(--orange); color:#fff; margin-bottom:10px; }
+  .btn-primary:hover { background:var(--orange-dark); }
+  .btn-secondary { background:transparent; color:#78716c; }
+  .btn-secondary:hover { color:#1c1917; }
+  .promo { margin-top:24px; padding-top:20px; border-top:1px solid #f0f0ef; font-size:13px; color:#78716c; }
+  .promo a { color:var(--orange-dark); font-weight:600; text-decoration:none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><span class="dot"></span>OrangeURL</div>
+    <div class="warn-icon">⚠️</div>
+    <h1>Heads up — this link may be unsafe</h1>
+    <div class="reason">` + safeReason + `</div>
+    <div class="dest">You are about to visit:<br><strong>` + displayDest + `</strong></div>
+    <a class="btn btn-primary" href="` + safeDest + `" rel="noopener noreferrer nofollow">Continue to site</a>
+    <a class="btn btn-secondary" href="https://orangeurl.live">No thanks, take me back</a>
+    <div class="promo">
+      Protected by <a href="https://orangeurl.live">OrangeURL</a> — create short links, QR codes &amp; landing pages that people can trust.
+    </div>
+  </div>
+</body>
+</html>`
 }
 

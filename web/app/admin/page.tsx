@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   Link as LinkIcon,
@@ -49,6 +50,9 @@ import {
   ShieldBan,
   UserX,
   UserCheck,
+  Flag,
+  FlagOff,
+  ShieldCheck,
 } from 'lucide-react';
 
 // --- Types ---
@@ -130,6 +134,14 @@ export default function AdminPage() {
   const [banTarget, setBanTarget] = useState<AdminUser | null>(null);
   const [banningUser, setBanningUser] = useState<Set<string>>(new Set());
 
+  // --- Safety interstitial ---
+  const [interstitialEnabled, setInterstitialEnabled] = useState(false);
+  const [interstitialSaving, setInterstitialSaving] = useState(false);
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
+  const [flaggingIds, setFlaggingIds] = useState<Set<string>>(new Set());
+  const [flagTarget, setFlagTarget] = useState<AdminURL | null>(null);
+  const [flagReason, setFlagReason] = useState('');
+
   const { toast } = useToast();
   const { isSignedIn } = useAuth();
 
@@ -198,15 +210,36 @@ export default function AdminPage() {
     }
   }, [toast]);
 
+  // --- Safety interstitial fetch ---
+  const fetchInterstitial = useCallback(async () => {
+    try {
+      const [settingRes, flaggedRes] = await Promise.all([
+        fetch('/api/admin/settings/interstitial'),
+        fetch('/api/admin/flag'),
+      ]);
+      if (settingRes.ok) {
+        const data = await settingRes.json();
+        setInterstitialEnabled(!!data.enabled);
+      }
+      if (flaggedRes.ok) {
+        const data = await flaggedRes.json();
+        setFlaggedIds(new Set<string>(data.short_ids || []));
+      }
+    } catch {
+      // Non-fatal: interstitial controls just render in their default state.
+    }
+  }, []);
+
   useEffect(() => {
     if (isSignedIn) {
       fetchURLs();
       fetchBlockedDomains();
       fetchUsers();
+      fetchInterstitial();
     } else {
       setLoading(false);
     }
-  }, [isSignedIn, fetchURLs, fetchBlockedDomains, fetchUsers]);
+  }, [isSignedIn, fetchURLs, fetchBlockedDomains, fetchUsers, fetchInterstitial]);
 
   // --- URL helpers ---
   const userSummaries = useMemo(() => {
@@ -334,6 +367,114 @@ export default function AdminPage() {
     }
     setBulkDeleteOpen(false);
     setSelectedIds(new Set());
+  };
+
+  // --- Safety interstitial handlers ---
+  const handleToggleInterstitial = async (enabled: boolean) => {
+    setInterstitialSaving(true);
+    // Optimistic: reflect the switch immediately, roll back on failure.
+    setInterstitialEnabled(enabled);
+    try {
+      const response = await fetch('/api/admin/settings/interstitial', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to update setting');
+      }
+      toast({
+        title: enabled ? 'Safety interstitial enabled' : 'Safety interstitial disabled',
+        description: enabled
+          ? 'Flagged links now show a warning page before redirecting.'
+          : 'All links redirect instantly again.',
+        variant: 'success',
+        icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />,
+      });
+    } catch (err) {
+      setInterstitialEnabled(!enabled);
+      toast({
+        title: 'Update failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+        icon: <XCircle className="h-5 w-5 text-red-600" />,
+      });
+    } finally {
+      setInterstitialSaving(false);
+    }
+  };
+
+  const handleFlag = async (url: AdminURL, reason: string) => {
+    setFlaggingIds(prev => new Set(prev).add(url.short_id));
+    try {
+      const response = await fetch('/api/admin/flag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ short_id: url.short_id, flag_reason: reason.trim() }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to flag URL');
+      }
+      setFlaggedIds(prev => new Set(prev).add(url.short_id));
+      toast({
+        title: 'Link flagged',
+        description: `${url.short_id} will show a safety warning${interstitialEnabled ? '' : ' once the interstitial is enabled'}.`,
+        variant: 'success',
+        icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />,
+      });
+    } catch (err) {
+      toast({
+        title: 'Flag failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+        icon: <XCircle className="h-5 w-5 text-red-600" />,
+      });
+    } finally {
+      setFlaggingIds(prev => {
+        const next = new Set(prev);
+        next.delete(url.short_id);
+        return next;
+      });
+      setFlagTarget(null);
+      setFlagReason('');
+    }
+  };
+
+  const handleUnflag = async (url: AdminURL) => {
+    setFlaggingIds(prev => new Set(prev).add(url.short_id));
+    try {
+      const response = await fetch(`/api/admin/flag/${encodeURIComponent(url.short_id)}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to unflag URL');
+      }
+      setFlaggedIds(prev => {
+        const next = new Set(prev);
+        next.delete(url.short_id);
+        return next;
+      });
+      toast({
+        title: 'Flag removed',
+        description: `${url.short_id} redirects normally again.`,
+        variant: 'success',
+        icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />,
+      });
+    } catch (err) {
+      toast({
+        title: 'Unflag failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+        icon: <XCircle className="h-5 w-5 text-red-600" />,
+      });
+    } finally {
+      setFlaggingIds(prev => {
+        const next = new Set(prev);
+        next.delete(url.short_id);
+        return next;
+      });
+    }
   };
 
   const toggleSelect = (id: string) => {
@@ -651,6 +792,41 @@ export default function AdminPage() {
 
               {/* ===== URLS TAB ===== */}
               <TabsContent value="urls" className="space-y-4">
+                {/* Safety Interstitial Toggle */}
+                <Card className={interstitialEnabled ? 'border-orange-300 dark:border-orange-800 bg-orange-50/40 dark:bg-orange-950/20' : ''}>
+                  <CardContent className="p-4 flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${interstitialEnabled ? 'bg-orange-100 dark:bg-orange-900/40' : 'bg-muted'}`}>
+                        <ShieldCheck className={`w-5 h-5 ${interstitialEnabled ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold flex items-center gap-2">
+                          Safety interstitial
+                          {flaggedIds.size > 0 && (
+                            <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                              {flaggedIds.size} flagged
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5 max-w-lg">
+                          When on, any link you flag shows a branded &ldquo;this link may be phishing or spam&rdquo; warning page
+                          with a Continue button before redirecting. Unflagged links redirect instantly.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      role="switch"
+                      aria-checked={interstitialEnabled}
+                      aria-label="Toggle safety interstitial"
+                      disabled={interstitialSaving}
+                      onClick={() => handleToggleInterstitial(!interstitialEnabled)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${interstitialEnabled ? 'bg-orange-600' : 'bg-input'}`}
+                    >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${interstitialEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                  </CardContent>
+                </Card>
+
                 {/* User Breakdown */}
                 {!loading && !error && !selectedUser && userSummaries.length > 0 && (
                   <motion.div
@@ -876,6 +1052,11 @@ export default function AdminPage() {
                                       <LinkIcon className="w-3.5 h-3.5 text-orange-600 flex-shrink-0" />
                                       <span className="font-mono font-medium text-orange-600 dark:text-orange-400">{url.short_id}</span>
                                       {url.is_locked && <Lock className="w-3 h-3 text-amber-500" />}
+                                      {flaggedIds.has(url.short_id) && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" title="Shows safety warning before redirecting">
+                                          <Flag className="w-2.5 h-2.5" />Flagged
+                                        </span>
+                                      )}
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 max-w-xs">
@@ -901,9 +1082,20 @@ export default function AdminPage() {
                                   </td>
                                   <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(url.created_at)}</td>
                                   <td className="px-4 py-3 text-right">
-                                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(url)} disabled={deleting.has(url.id)} className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 px-2.5">
-                                      {deleting.has(url.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                    </Button>
+                                    <div className="flex items-center justify-end gap-1">
+                                      {flaggedIds.has(url.short_id) ? (
+                                        <Button variant="ghost" size="sm" onClick={() => handleUnflag(url)} disabled={flaggingIds.has(url.short_id)} title="Remove safety flag" className="text-orange-600 hover:text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/30 h-8 px-2.5">
+                                          {flaggingIds.has(url.short_id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlagOff className="w-4 h-4" />}
+                                        </Button>
+                                      ) : (
+                                        <Button variant="ghost" size="sm" onClick={() => { setFlagTarget(url); setFlagReason(''); }} disabled={flaggingIds.has(url.short_id)} title="Flag as phishing/spam" className="text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30 h-8 px-2.5">
+                                          {flaggingIds.has(url.short_id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
+                                        </Button>
+                                      )}
+                                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(url)} disabled={deleting.has(url.id)} className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 px-2.5">
+                                        {deleting.has(url.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                      </Button>
+                                    </div>
                                   </td>
                                 </motion.tr>
                               ))}
@@ -936,11 +1128,23 @@ export default function AdminPage() {
                                         <LinkIcon className="w-3.5 h-3.5 text-orange-600 flex-shrink-0" />
                                         <span className="font-mono font-medium text-orange-600 dark:text-orange-400">{url.short_id}</span>
                                         {url.is_locked && <Lock className="w-3 h-3 text-amber-500" />}
+                                        {flaggedIds.has(url.short_id) && <Flag className="w-3 h-3 text-orange-600 dark:text-orange-400" />}
                                         {url.is_active ? <span className="w-2 h-2 rounded-full bg-emerald-500" /> : <span className="w-2 h-2 rounded-full bg-red-500" />}
                                       </div>
-                                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(url)} disabled={deleting.has(url.id)} className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 w-8 p-0">
-                                        {deleting.has(url.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                      </Button>
+                                      <div className="flex items-center gap-1">
+                                        {flaggedIds.has(url.short_id) ? (
+                                          <Button variant="ghost" size="sm" onClick={() => handleUnflag(url)} disabled={flaggingIds.has(url.short_id)} title="Remove safety flag" className="text-orange-600 hover:text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/30 h-8 w-8 p-0">
+                                            {flaggingIds.has(url.short_id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlagOff className="w-4 h-4" />}
+                                          </Button>
+                                        ) : (
+                                          <Button variant="ghost" size="sm" onClick={() => { setFlagTarget(url); setFlagReason(''); }} disabled={flaggingIds.has(url.short_id)} title="Flag as phishing/spam" className="text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30 h-8 w-8 p-0">
+                                            {flaggingIds.has(url.short_id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
+                                          </Button>
+                                        )}
+                                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(url)} disabled={deleting.has(url.id)} className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 w-8 p-0">
+                                          {deleting.has(url.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                        </Button>
+                                      </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground truncate">{url.original_url}</p>
                                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1268,6 +1472,50 @@ export default function AdminPage() {
               <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={() => deleteTarget && handleDelete(deleteTarget)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
                 Delete Forever
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Flag URL Confirmation */}
+        <AlertDialog open={!!flagTarget} onOpenChange={open => !open && setFlagTarget(null)}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <Flag className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <AlertDialogTitle>Flag as phishing / spam?</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3 pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Visitors of{' '}
+                    <span className="font-mono font-semibold text-orange-600 dark:text-orange-400">{flagTarget?.short_id}</span>{' '}
+                    will see a branded safety warning with a Continue button before the redirect
+                    {interstitialEnabled ? '.' : ' (once the safety interstitial is enabled).'}
+                  </p>
+                  <div>
+                    <label htmlFor="flag-reason" className="text-xs font-medium text-foreground">Warning message shown to visitors</label>
+                    <Textarea
+                      id="flag-reason"
+                      value={flagReason}
+                      onChange={e => setFlagReason(e.target.value)}
+                      placeholder="This link may be phishing or spam."
+                      rows={3}
+                      className="mt-1.5 resize-none"
+                    />
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2 sm:gap-0">
+              <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => flagTarget && handleFlag(flagTarget, flagReason || 'This link may be phishing or spam.')}
+                className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800"
+              >
+                Flag Link
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

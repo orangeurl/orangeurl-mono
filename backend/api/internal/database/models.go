@@ -97,6 +97,21 @@ type BlockedUrl struct {
 	CreatedAt      sql.NullTime   `json:"created_at"`
 }
 
+type FlaggedUrl struct {
+	ID          uuid.UUID      `json:"id"`
+	ShortID     string         `json:"short_id"`
+	OriginalUrl sql.NullString `json:"original_url"`
+	FlagReason  string         `json:"flag_reason"`
+	FlaggedBy   uuid.NullUUID  `json:"flagged_by"`
+	CreatedAt   sql.NullTime   `json:"created_at"`
+}
+
+type AppSetting struct {
+	Key       string       `json:"key"`
+	Value     string       `json:"value"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+}
+
 type MonthlyUsage struct {
 	ID              uuid.UUID    `json:"id"`
 	UserID          uuid.UUID    `json:"user_id"`

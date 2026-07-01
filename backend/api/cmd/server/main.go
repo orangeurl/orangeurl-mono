@@ -146,6 +146,13 @@ func setupRoutes(app *fiber.App) {
 	api.Get("/admin/blocked", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.ListBlockedURLs)
 	api.Get("/admin/blocked/:shortId", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.IsURLBlocked)
 
+	// Admin safety interstitial: flag individual links + global on/off toggle
+	api.Post("/admin/flag", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.FlagURL)
+	api.Delete("/admin/flag/:shortId", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.UnflagURL)
+	api.Get("/admin/flagged", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.ListFlaggedURLs)
+	api.Get("/admin/settings/interstitial", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.GetInterstitialSetting)
+	api.Put("/admin/settings/interstitial", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.SetInterstitialSetting)
+
 	// Admin URL management (requires JWT auth + admin role)
 	api.Get("/admin/urls", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminListAllURLs)
 	api.Delete("/admin/urls/:id", middleware.RequireAuth(), middleware.AdminAuditLog(), admin.AdminHardDeleteURL)
