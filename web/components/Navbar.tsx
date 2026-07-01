@@ -172,7 +172,7 @@ export function Navbar() {
                 </Button>
               )}
               {isSignedIn && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-5">
                   <NotificationBell />
                   <TierUserButton tier={userTier || 'free'} />
                 </div>
@@ -183,7 +183,7 @@ export function Navbar() {
           {/* Mobile Actions */}
           <div className="flex md:hidden items-center space-x-2">
             {isSignedIn && (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-4">
                 <NotificationBell />
                 <TierUserButton tier={userTier || 'free'} />
               </div>
