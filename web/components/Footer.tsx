@@ -207,6 +207,14 @@ export function Footer() {
                   {t.footer.legal.privacy}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/abuse"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {t.footer.legal.abuse}
+                </Link>
+              </li>
             </ul>
           </div>
 

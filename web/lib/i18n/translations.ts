@@ -48,6 +48,7 @@ export const translations = {
         privacy: 'Privacy Policy',
         terms: 'Terms of Service',
         cookies: 'Cookie Policy',
+        abuse: 'Report Abuse',
       },
       connect: {
         title: 'Connect',
@@ -196,6 +197,7 @@ export const translations = {
         privacy: 'Datenschutz',
         terms: 'Nutzungsbedingungen',
         cookies: 'Cookie-Richtlinie',
+        abuse: 'Missbrauch melden',
       },
       connect: {
         title: 'Kontakt',

@@ -79,6 +79,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const legal: Entry[] = [
     '/privacy',
     '/terms',
+    '/abuse',
   ].map((path) => ({
     url: `${BASE_URL}${path}`,
     lastModified: now,

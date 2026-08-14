@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
     { url: '/terms', lastmod: currentDate, changefreq: 'yearly', priority: 0.3 },
     { url: '/privacy', lastmod: currentDate, changefreq: 'yearly', priority: 0.3 },
     { url: '/support', lastmod: currentDate, changefreq: 'weekly', priority: 0.6 },
-    
+    { url: '/abuse', lastmod: currentDate, changefreq: 'monthly', priority: 0.4 },
+
     // SEO Hub
     { url: '/g', lastmod: currentDate, changefreq: 'daily', priority: 0.9 },
     
