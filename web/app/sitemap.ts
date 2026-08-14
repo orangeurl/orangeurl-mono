@@ -80,6 +80,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/privacy',
     '/terms',
     '/abuse',
+    '/unblock',
   ].map((path) => ({
     url: `${BASE_URL}${path}`,
     lastModified: now,

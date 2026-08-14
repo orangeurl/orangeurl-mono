@@ -49,6 +49,7 @@ export const translations = {
         terms: 'Terms of Service',
         cookies: 'Cookie Policy',
         abuse: 'Report Abuse',
+        unblock: 'Blocked at School?',
       },
       connect: {
         title: 'Connect',
@@ -198,6 +199,7 @@ export const translations = {
         terms: 'Nutzungsbedingungen',
         cookies: 'Cookie-Richtlinie',
         abuse: 'Missbrauch melden',
+        unblock: 'In der Schule blockiert?',
       },
       connect: {
         title: 'Kontakt',

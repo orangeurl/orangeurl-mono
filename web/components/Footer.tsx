@@ -215,6 +215,14 @@ export function Footer() {
                   {t.footer.legal.abuse}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/unblock"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {t.footer.legal.unblock}
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -259,7 +267,7 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-border/40">
           <div className="flex flex-col items-center md:items-start gap-2">
             <div className="text-sm text-muted-foreground">
-              {t.footer.copyright.replace('{year}', '2025')}
+              {t.footer.copyright.replace('{year}', String(new Date().getFullYear()))}
             </div>
 
             {/* API Status */}
